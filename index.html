@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MAMA MedEvac PNG — Checklist Builder</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: #f5f5f3;
+    color: #1a1a1a;
+  }
+  button { font-family: inherit; }
+  input, select { font-family: inherit; }
+  input:disabled, button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  #app { display: flex; height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 240px; background: #1a1a1a; color: #e8e8e8;
+    display: flex; flex-direction: column; flex-shrink: 0;
+  }
+  .sidebar-header {
+    padding: 16px; border-bottom: 1px solid #2a2a2a;
+    font-size: 13px; font-weight: 500; letter-spacing: 0.5px;
+  }
+  .brand-name { color: #C8102E; font-weight: 600; }
+  .brand-sub { font-size: 11px; color: #888; margin-top: 2px; }
+
+  .sidebar-list { flex: 1; overflow-y: auto; }
+  .sidebar-item {
+    padding: 10px 16px; cursor: pointer; font-size: 13px;
+    border-left: 3px solid transparent;
+    color: #bbb;
+  }
+  .sidebar-item.active {
+    border-left-color: #C8102E;
+    background: #2a2a2a;
+    color: #fff;
+  }
+
+  .sidebar-bottom { padding: 8px; border-top: 1px solid #2a2a2a; }
+
+  .btn {
+    padding: 8px 12px; background: #C8102E; color: white; border: none;
+    border-radius: 4px; font-size: 12px; font-weight: 500; cursor: pointer;
+    width: 100%; margin: 4px 0;
+  }
+  .btn-secondary { background: #2a2a2a; }
+  .btn-danger-pending { background: #C8102E; font-weight: 600; }
+  .new-btn { margin: 8px 12px; padding: 8px 12px; width: calc(100% - 24px); }
+
+  /* Main */
+  .main { flex: 1; display: flex; overflow: hidden; }
+  .pane { flex: 1; overflow: auto; padding: 20px; }
+  .pane-preview { background: #e8e8e6; border-left: 1px solid #ddd; }
+
+  .pane-header {
+    font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+    text-transform: uppercase; color: #888;
+    margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid #ddd;
+  }
+
+  .field { margin-bottom: 12px; }
+  .field label {
+    display: block; font-size: 11px; font-weight: 500; color: #666;
+    margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .field input, .field select {
+    width: 100%; padding: 8px 10px; font-size: 14px;
+    border: 1px solid #ddd; border-radius: 4px; background: white;
+  }
+
+  .field-row { display: flex; gap: 12px; }
+  .field-row .field { flex: 1; }
+  .field-row .field.flex-2 { flex: 2; }
+
+  .export-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .export-btn {
+    padding: 8px 14px; background: #C8102E; color: white; border: none;
+    border-radius: 4px; font-size: 13px; font-weight: 500; cursor: pointer;
+  }
+  .export-btn-alt {
+    padding: 8px 14px; background: white; color: #1a1a1a;
+    border: 1px solid #ccc; border-radius: 4px; font-size: 13px;
+    font-weight: 500; cursor: pointer;
+  }
+
+  /* Columns config panel */
+  .columns-panel {
+    background: #fff7f7; border: 1px solid #f0d0d0; border-radius: 6px;
+    padding: 12px; margin-bottom: 12px;
+  }
+  .columns-panel-title {
+    font-size: 11px; font-weight: 600; color: #C8102E; letter-spacing: 1px;
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+  .columns-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .preset-btn {
+    padding: 5px 10px; background: white; border: 1px solid #ddd; border-radius: 4px;
+    font-size: 12px; cursor: pointer; color: #444;
+  }
+  .preset-btn:hover { background: #f5f5f3; }
+  .preset-btn.armed { background: #C8102E; color: white; border-color: #C8102E; font-weight: 600; }
+  .column-config-row {
+    display: grid; grid-template-columns: 1fr 90px auto; gap: 6px; margin-bottom: 6px;
+    align-items: center;
+  }
+  .column-config-row input, .column-config-row select {
+    padding: 6px 8px; font-size: 13px; border: 1px solid #ddd; border-radius: 4px;
+    background: white;
+  }
+
+  .section-card {
+    background: white; border: 1px solid #e5e5e5; border-radius: 6px;
+    padding: 12px; margin-bottom: 12px;
+  }
+  .section-header-row {
+    display: flex; gap: 6px; align-items: center; margin-bottom: 10px;
+  }
+  .section-header-row input {
+    flex: 1; padding: 8px 10px; font-size: 14px; font-weight: 500;
+    border: 1px solid #ddd; border-radius: 4px;
+  }
+  .row-grid {
+    display: grid; gap: 6px; margin-bottom: 6px;
+    align-items: center;
+  }
+  .row-grid input {
+    padding: 8px 10px; font-size: 14px;
+    border: 1px solid #ddd; border-radius: 4px; min-width: 0;
+  }
+  .row-actions { display: flex; gap: 4px; }
+
+  .icon-btn {
+    padding: 4px 8px; background: transparent; border: 1px solid #ddd;
+    border-radius: 4px; font-size: 12px; cursor: pointer; color: #666;
+  }
+  .icon-btn.danger { color: #C8102E; }
+
+  .add-btn {
+    padding: 6px 10px; background: #f5f5f3; border: 1px dashed #bbb;
+    border-radius: 4px; font-size: 12px; cursor: pointer; color: #666;
+    width: 100%;
+  }
+  .add-btn-large { margin-top: 8px; padding: 10px; }
+
+  #restore-input { display: none; }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #1a1a1a; color: white; padding: 10px 20px; border-radius: 6px;
+    font-size: 13px; z-index: 2000; opacity: 0; transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand-name">MAMA MedEvac PNG</div>
+      <div class="brand-sub">Checklist Builder</div>
+    </div>
+    <button class="btn new-btn" onclick="App.newChecklist()">+ New checklist</button>
+    <div id="sidebar-list" class="sidebar-list"></div>
+    <div class="sidebar-bottom">
+      <button class="btn btn-secondary" onclick="App.duplicateChecklist()">Duplicate current</button>
+      <button id="delete-btn" class="btn btn-secondary" onclick="App.handleDeleteClick()">Delete current</button>
+      <button class="btn btn-secondary" onclick="App.exportBackup()">Backup all (JSON)</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('restore-input').click()">Restore from backup</button>
+      <input type="file" id="restore-input" accept=".json,application/json" onchange="App.importBackup(event)">
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <!-- Editor -->
+    <div class="pane">
+      <div class="pane-header">Editor</div>
+      <div class="export-bar">
+        <button class="export-btn" onclick="App.exportPDF()">Export PDF</button>
+        <button class="export-btn-alt" onclick="App.exportHTML()">Export HTML</button>
+      </div>
+
+      <div class="field">
+        <label>Checklist title</label>
+        <input id="f-title" oninput="App.updateActive({title: this.value})">
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Revision</label>
+          <input id="f-revision" oninput="App.updateActive({revision: this.value})">
+        </div>
+        <div class="field flex-2">
+          <label>Date</label>
+          <input id="f-date" oninput="App.updateActive({date: this.value})">
+        </div>
+      </div>
+
+      <!-- Columns config -->
+      <div class="columns-panel">
+        <div class="columns-panel-title">Columns for this checklist</div>
+        <div class="columns-presets">
+          <button class="preset-btn" data-preset="item-only" onclick="App.applyPreset('item-only')">Item only</button>
+          <button class="preset-btn" data-preset="item-status" onclick="App.applyPreset('item-status')">Item + Status</button>
+          <button class="preset-btn" data-preset="item-qty-expiry" onclick="App.applyPreset('item-qty-expiry')">Item + Qty + Expiry</button>
+          <button class="preset-btn" data-preset="item-qty-expiry-notes" onclick="App.applyPreset('item-qty-expiry-notes')">Item + Qty + Expiry + Notes</button>
+        </div>
+        <div id="columns-list"></div>
+        <button class="add-btn" style="margin-top:6px;" onclick="App.addColumn()">+ Add column</button>
+        <div id="orientation-hint" style="margin-top:8px;font-size:11px;color:#666;display:none;"></div>
+      </div>
+
+      <div class="pane-header" style="margin-top:16px;">Sections</div>
+      <div id="sections-list"></div>
+
+      <button class="add-btn add-btn-large" onclick="App.addSection()">+ Add section</button>
+    </div>
+
+    <!-- Preview -->
+    <div class="pane pane-preview">
+      <div class="pane-header">Live preview</div>
+      <div id="preview"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  const BRAND_RED = '#C8102E';
+  const BRAND_NAME = 'MAMA MedEvac PNG';
+  const STORAGE_KEY = 'mama_checklists_v3';
+
+  const uid = () => Math.random().toString(36).slice(2, 10);
+
+  // Column = {id, name, width}  width: 'auto' or a number+unit string like '90px' or '120px'
+  const blankColumn = (name = 'Column', width = 'auto') => ({ id: uid(), name, width });
+
+  // Row data is now an object: { id, values: { [columnId]: 'text' } }
+  const blankRow = (columns) => ({
+    id: uid(),
+    values: Object.fromEntries(columns.map(c => [c.id, ''])),
+  });
+
+  const blankSection = (columns) => ({
+    id: uid(),
+    heading: 'New section',
+    rows: [blankRow(columns)],
+  });
+
+  function defaultColumns() {
+    return [
+      blankColumn('Item', 'auto'),
+      blankColumn('Reference', '140px'),
+    ];
+  }
+
+  const PRESETS = {
+    'item-only': () => [blankColumn('Item', 'auto')],
+    'item-status': () => [blankColumn('Item', 'auto'), blankColumn('Status', '120px')],
+    'item-qty-expiry': () => [
+      blankColumn('Equipment', 'auto'),
+      blankColumn('Quantity', '90px'),
+      blankColumn('Expiry', '110px'),
+    ],
+    'item-qty-expiry-notes': () => [
+      blankColumn('Equipment', 'auto'),
+      blankColumn('Qty', '70px'),
+      blankColumn('Expiry', '100px'),
+      blankColumn('Notes', '140px'),
+    ],
+  };
+
+  function blankChecklist(name = 'Untitled checklist') {
+    const columns = defaultColumns();
+    return {
+      id: uid(),
+      title: name,
+      revision: '1.0',
+      date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+      columns,
+      sections: [blankSection(columns)],
+    };
+  }
+
+  function escapeHTML(s) {
+    return String(s ?? '')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  // ---- State ---------------------------------------------------------------
+  let state = {
+    checklists: [],
+    activeId: null,
+    pendingDelete: false,
+    deleteTimer: null,
+  };
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.checklists?.length) {
+          state.checklists = parsed.checklists;
+          state.activeId = parsed.activeId || parsed.checklists[0].id;
+          return;
+        }
+      }
+    } catch (e) {}
+    // Seed example: 3-column equipment check
+    const seed = blankChecklist('Medical equipment check');
+    seed.columns = PRESETS['item-qty-expiry']();
+    const [cItem, cQty, cExp] = seed.columns;
+    seed.sections = [{
+      id: uid(),
+      heading: 'Airway & breathing',
+      rows: [
+        { id: uid(), values: { [cItem.id]: 'Oxygen cylinder', [cQty.id]: '2', [cExp.id]: '03/2027' } },
+        { id: uid(), values: { [cItem.id]: 'BVM with reservoir', [cQty.id]: '1', [cExp.id]: 'N/A' } },
+        { id: uid(), values: { [cItem.id]: 'ET tubes (6.0–8.0)', [cQty.id]: '5', [cExp.id]: '11/2026' } },
+      ],
+    }];
+    state.checklists = [seed];
+    state.activeId = seed.id;
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        checklists: state.checklists,
+        activeId: state.activeId,
+      }));
+    } catch (e) {
+      console.error('Save failed:', e);
+    }
+  }
+
+  function getActive() {
+    return state.checklists.find(c => c.id === state.activeId) || state.checklists[0];
+  }
+
+  // ---- Toast ---------------------------------------------------------------
+  let toastTimer = null;
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+  }
+
+  // ---- Build grid template string from columns -----------------------------
+  // First column gets the 'auto' (1fr) treatment if no column is marked auto.
+  function gridTemplate(columns, includeActions = false) {
+    const parts = columns.map(c => {
+      const w = (c.width || 'auto').trim();
+      if (w === 'auto' || w === '') return '1fr';
+      return w;
+    });
+    if (includeActions) parts.push('auto');
+    return parts.join(' ');
+  }
+
+  // ---- Render checklist (preview + export) ---------------------------------
+  function renderChecklistHTML(cl) {
+    const cols = cl.columns;
+    const nCols = cols.length;
+
+    // Build column header row (if more than 1 column, show headers)
+    const showHeaders = nCols > 1;
+
+    const sectionsHTML = cl.sections.map(s => {
+      // Header row
+      const headerHTML = showHeaders ? `
+        <div style="display:grid;grid-template-columns:${gridTemplate(cols)};gap:16px;padding:6px 0;border-bottom:1px solid #ccc;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:#888;">
+          ${cols.map((c, i) => `<div style="min-width:0;overflow-wrap:break-word;${i > 0 ? 'text-align:right;' : ''}">${escapeHTML(c.name)}</div>`).join('')}
+        </div>` : '';
+
+      const rowsHTML = s.rows.map((r, i) => {
+        const cellsHTML = cols.map((c, ci) => {
+          const v = (r.values && r.values[c.id]) || '';
+          const align = ci > 0 ? 'text-align:right;color:#666;' : 'color:#1a1a1a;';
+          return `<div style="min-width:0;overflow-wrap:break-word;${align}">${escapeHTML(v)}</div>`;
+        }).join('');
+        const sep = i < s.rows.length - 1 ? 'border-bottom:0.5px dashed #ddd;' : '';
+        return `
+          <div style="display:grid;grid-template-columns:${gridTemplate(cols)};gap:16px;padding:7px 0;${sep}font-size:14px;">
+            ${cellsHTML}
+          </div>`;
+      }).join('');
+
+      return `
+      <div style="font-size:13px;font-weight:500;color:${BRAND_RED};text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;padding-bottom:4px;border-bottom:1px solid ${BRAND_RED};">${escapeHTML(s.heading)}</div>
+      ${headerHTML}
+      <div style="margin-bottom:1.25rem;">${rowsHTML}</div>`;
+    }).join('');
+
+    // Dynamic page width based on column count — more generous tiers
+    const maxWidth = nCols <= 2 ? 600 : nCols === 3 ? 640 : nCols === 4 ? 740 : nCols === 5 ? 880 : nCols === 6 ? 1000 : 1120;
+
+    return `
+    <div style="max-width:${maxWidth}px;margin:0 auto;background:white;border:0.5px solid #e5e5e5;border-radius:12px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+      <div style="padding:1.25rem 1rem 0.75rem;background:white;display:flex;justify-content:center;">
+        <div style="background:${BRAND_RED};color:white;padding:10px 32px;border-radius:8px;font-size:18px;font-weight:500;letter-spacing:0.5px;min-width:320px;text-align:center;">${BRAND_NAME}</div>
+      </div>
+      <div style="padding:0.5rem 2rem 1.25rem;text-align:center;border-bottom:0.5px solid #e5e5e5;">
+        <div style="font-size:16px;font-weight:500;color:#1a1a1a;">${escapeHTML(cl.title)}</div>
+        <div style="font-size:12px;color:#666;margin-top:4px;">Rev. ${escapeHTML(cl.revision)} · ${escapeHTML(cl.date)}</div>
+      </div>
+      <div style="padding:1.25rem 2rem 1.5rem;background:white;">${sectionsHTML}</div>
+      <div style="padding:0.75rem 2rem;background:#f7f7f5;border-top:0.5px solid #e5e5e5;display:flex;justify-content:space-between;font-size:11px;color:#888;">
+        <span>${BRAND_NAME} · Medical SOP</span><span>Page 1 of 1</span>
+      </div>
+    </div>`;
+  }
+
+  function buildExportHTML(cl) {
+    const nCols = (cl.columns || []).length;
+    const useLandscape = nCols >= 5;
+    const pageRule = useLandscape ? '@page{size:A4 landscape;margin:10mm;}' : '@page{margin:12mm;}';
+    const orientationLabel = useLandscape ? ' (landscape)' : '';
+    return `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>${escapeHTML(cl.title)} — ${BRAND_NAME}</title>
+<style>
+  body{margin:0;padding:24px;background:#f0f0ee;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;}
+  .print-bar{position:fixed;top:12px;right:12px;display:flex;gap:8px;z-index:100;align-items:center;}
+  .print-bar .hint{font-size:11px;color:#666;background:white;padding:6px 10px;border-radius:4px;border:1px solid #ddd;}
+  .print-bar button{padding:10px 18px;background:${BRAND_RED};color:white;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);}
+  .print-bar button.alt{background:white;color:#1a1a1a;border:1px solid #ccc;}
+  @media print{
+    body{background:white;padding:0;}
+    .print-bar{display:none;}
+    ${pageRule}
+  }
+</style>
+</head><body>
+<div class="print-bar">
+  ${useLandscape ? '<span class="hint">Wide checklist — printing in landscape</span>' : ''}
+  <button onclick="window.print()">Print / Save as PDF${orientationLabel}</button>
+  <button class="alt" onclick="window.close()">Close</button>
+</div>
+${renderChecklistHTML(cl)}
+</body></html>`;
+  }
+
+  // ---- Render UI -----------------------------------------------------------
+  function render() {
+    const cur = getActive();
+    if (!cur) {
+      document.getElementById('preview').innerHTML = '<em>No checklist</em>';
+      return;
+    }
+
+    // Sidebar
+    document.getElementById('sidebar-list').innerHTML = state.checklists.map(c => `
+      <div class="sidebar-item ${c.id === state.activeId ? 'active' : ''}" onclick="App.selectChecklist('${c.id}')">
+        ${escapeHTML(c.title || '(untitled)')}
+      </div>
+    `).join('');
+
+    // Delete button
+    const delBtn = document.getElementById('delete-btn');
+    if (state.pendingDelete) {
+      delBtn.textContent = 'Tap again to confirm delete';
+      delBtn.className = 'btn btn-danger-pending';
+    } else {
+      delBtn.textContent = 'Delete current';
+      delBtn.className = 'btn btn-secondary';
+    }
+
+    // Form fields (don't clobber focused input)
+    const focused = document.activeElement;
+    const setIfNotFocused = (id, val) => {
+      const el = document.getElementById(id);
+      if (el && el !== focused) el.value = val ?? '';
+    };
+    setIfNotFocused('f-title', cur.title);
+    setIfNotFocused('f-revision', cur.revision);
+    setIfNotFocused('f-date', cur.date);
+
+    // Columns config panel
+    document.getElementById('columns-list').innerHTML = cur.columns.map((col, idx) => `
+      <div class="column-config-row" data-col-id="${col.id}">
+        <input value="${escapeHTML(col.name)}" placeholder="Column name"
+               oninput="App.updateColumn('${col.id}', {name: this.value})">
+        <input value="${escapeHTML(col.width)}" placeholder="auto"
+               title="Column width: 'auto', or pixel value like '120px'"
+               oninput="App.updateColumn('${col.id}', {width: this.value})">
+        <div class="row-actions">
+          <button class="icon-btn" onclick="App.moveColumn('${col.id}', -1)" ${idx === 0 ? 'disabled' : ''}>↑</button>
+          <button class="icon-btn" onclick="App.moveColumn('${col.id}', 1)" ${idx === cur.columns.length - 1 ? 'disabled' : ''}>↓</button>
+          <button class="icon-btn danger" onclick="App.removeColumn('${col.id}')" ${cur.columns.length <= 1 ? 'disabled' : ''}>✕</button>
+        </div>
+      </div>
+    `).join('');
+
+    // Orientation hint
+    const hintEl = document.getElementById('orientation-hint');
+    const nCols = cur.columns.length;
+    if (nCols >= 5) {
+      hintEl.style.display = 'block';
+      hintEl.innerHTML = `📄 <strong>${nCols} columns</strong> — PDF will print in <strong>landscape</strong> for better fit`;
+    } else {
+      hintEl.style.display = 'none';
+    }
+
+    // Preset buttons — show armed state for two-click confirmation
+    document.querySelectorAll('.preset-btn[data-preset]').forEach(btn => {
+      if (btn.dataset.preset === state.pendingPreset) {
+        btn.classList.add('armed');
+        btn.textContent = 'Click again to confirm';
+      } else {
+        btn.classList.remove('armed');
+        // Restore original label from preset key
+        const labels = {
+          'item-only': 'Item only',
+          'item-status': 'Item + Status',
+          'item-qty-expiry': 'Item + Qty + Expiry',
+          'item-qty-expiry-notes': 'Item + Qty + Expiry + Notes',
+        };
+        btn.textContent = labels[btn.dataset.preset] || btn.textContent;
+      }
+    });
+
+    // Sections
+    const gridCols = gridTemplate(cur.columns, true);
+    document.getElementById('sections-list').innerHTML = cur.sections.map((sec, sIdx) => {
+      const rowsHTML = sec.rows.map((row, rIdx) => {
+        const cellsHTML = cur.columns.map(col => {
+          const v = (row.values && row.values[col.id]) || '';
+          return `<input value="${escapeHTML(v)}" placeholder="${escapeHTML(col.name)}"
+                         oninput="App.updateRowCell('${sec.id}','${row.id}','${col.id}', this.value)">`;
+        }).join('');
+        return `
+          <div class="row-grid" style="grid-template-columns: ${gridCols};">
+            ${cellsHTML}
+            <div class="row-actions">
+              <button class="icon-btn" onclick="App.moveRow('${sec.id}','${row.id}',-1)" ${rIdx === 0 ? 'disabled' : ''}>↑</button>
+              <button class="icon-btn" onclick="App.moveRow('${sec.id}','${row.id}',1)" ${rIdx === sec.rows.length - 1 ? 'disabled' : ''}>↓</button>
+              <button class="icon-btn danger" onclick="App.removeRow('${sec.id}','${row.id}')">✕</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="section-card">
+          <div class="section-header-row">
+            <input value="${escapeHTML(sec.heading)}" placeholder="Section heading"
+                   oninput="App.updateSection('${sec.id}',{heading:this.value})">
+            <button class="icon-btn" onclick="App.moveSection('${sec.id}',-1)" ${sIdx === 0 ? 'disabled' : ''}>↑</button>
+            <button class="icon-btn" onclick="App.moveSection('${sec.id}',1)" ${sIdx === cur.sections.length - 1 ? 'disabled' : ''}>↓</button>
+            <button class="icon-btn danger" onclick="App.removeSection('${sec.id}')">✕</button>
+          </div>
+          ${rowsHTML}
+          <button class="add-btn" onclick="App.addRow('${sec.id}')">+ Add row</button>
+        </div>
+      `;
+    }).join('');
+
+    // Preview
+    document.getElementById('preview').innerHTML = renderChecklistHTML(cur);
+  }
+
+  function renderPreviewOnly() {
+    const cur = getActive();
+    if (!cur) return;
+    document.getElementById('preview').innerHTML = renderChecklistHTML(cur);
+    document.getElementById('sidebar-list').innerHTML = state.checklists.map(c => `
+      <div class="sidebar-item ${c.id === state.activeId ? 'active' : ''}" onclick="App.selectChecklist('${c.id}')">
+        ${escapeHTML(c.title || '(untitled)')}
+      </div>
+    `).join('');
+  }
+
+  // ---- App API -------------------------------------------------------------
+  const App = {
+    selectChecklist(id) {
+      state.activeId = id;
+      state.pendingDelete = false;
+      saveState();
+      render();
+    },
+
+    newChecklist() {
+      const c = blankChecklist();
+      state.checklists.push(c);
+      state.activeId = c.id;
+      state.pendingDelete = false;
+      saveState();
+      render();
+    },
+
+    duplicateChecklist() {
+      const cur = getActive();
+      if (!cur) return;
+      const copy = JSON.parse(JSON.stringify(cur));
+      copy.id = uid();
+      copy.title = cur.title + ' (copy)';
+      // Regenerate column IDs, but preserve mapping so row values follow
+      const colIdMap = {};
+      copy.columns = copy.columns.map(c => {
+        const newId = uid();
+        colIdMap[c.id] = newId;
+        return { ...c, id: newId };
+      });
+      copy.sections = copy.sections.map(s => ({
+        ...s,
+        id: uid(),
+        rows: s.rows.map(r => {
+          const newValues = {};
+          for (const oldId in r.values) {
+            const newId = colIdMap[oldId];
+            if (newId) newValues[newId] = r.values[oldId];
+          }
+          return { ...r, id: uid(), values: newValues };
+        }),
+      }));
+      state.checklists.push(copy);
+      state.activeId = copy.id;
+      state.pendingDelete = false;
+      saveState();
+      render();
+    },
+
+    handleDeleteClick() {
+      if (state.pendingDelete) {
+        if (state.checklists.length <= 1) {
+          const fresh = blankChecklist();
+          state.checklists = [fresh];
+          state.activeId = fresh.id;
+        } else {
+          state.checklists = state.checklists.filter(c => c.id !== state.activeId);
+          state.activeId = state.checklists[0].id;
+        }
+        state.pendingDelete = false;
+        if (state.deleteTimer) clearTimeout(state.deleteTimer);
+        saveState();
+        render();
+      } else {
+        state.pendingDelete = true;
+        state.deleteTimer = setTimeout(() => {
+          state.pendingDelete = false;
+          render();
+        }, 4000);
+        render();
+      }
+    },
+
+    updateActive(patch) {
+      const cur = getActive();
+      Object.assign(cur, patch);
+      saveState();
+      renderPreviewOnly();
+    },
+
+    // ---- Column ops ----
+    addColumn() {
+      const cur = getActive();
+      const newCol = blankColumn('Column ' + (cur.columns.length + 1), '100px');
+      cur.columns.push(newCol);
+      // Ensure every row has a value entry for this column
+      cur.sections.forEach(s => s.rows.forEach(r => {
+        r.values = r.values || {};
+        r.values[newCol.id] = '';
+      }));
+      saveState();
+      render();
+    },
+
+    updateColumn(colId, patch) {
+      const cur = getActive();
+      const col = cur.columns.find(c => c.id === colId);
+      if (!col) return;
+      Object.assign(col, patch);
+      saveState();
+      // Don't re-render the editor — that would steal focus from the input
+      // being typed into. Just update the preview, and patch the editor's
+      // row grid templates in place so column widths still update visually.
+      renderPreviewOnly();
+      if ('width' in patch) {
+        const gridCols = gridTemplate(cur.columns, true);
+        document.querySelectorAll('#sections-list .row-grid').forEach(el => {
+          el.style.gridTemplateColumns = gridCols;
+        });
+      }
+    },
+
+    removeColumn(colId) {
+      const cur = getActive();
+      if (cur.columns.length <= 1) return;
+      cur.columns = cur.columns.filter(c => c.id !== colId);
+      cur.sections.forEach(s => s.rows.forEach(r => {
+        if (r.values) delete r.values[colId];
+      }));
+      saveState();
+      render();
+    },
+
+    moveColumn(colId, dir) {
+      const cur = getActive();
+      const idx = cur.columns.findIndex(c => c.id === colId);
+      const n = idx + dir;
+      if (n < 0 || n >= cur.columns.length) return;
+      [cur.columns[idx], cur.columns[n]] = [cur.columns[n], cur.columns[idx]];
+      saveState();
+      render();
+    },
+
+    applyPreset(presetKey) {
+      const cur = getActive();
+      const preset = PRESETS[presetKey];
+      if (!preset) return;
+      // Two-click confirmation (confirm() is blocked in some sandboxes)
+      if (state.pendingPreset === presetKey) {
+        cur.columns = preset();
+        cur.sections.forEach(s => {
+          s.rows = s.rows.map(r => ({
+            id: r.id,
+            values: Object.fromEntries(cur.columns.map(c => [c.id, ''])),
+          }));
+        });
+        state.pendingPreset = null;
+        if (state.presetTimer) clearTimeout(state.presetTimer);
+        saveState();
+        render();
+        showToast('Preset applied');
+      } else {
+        state.pendingPreset = presetKey;
+        if (state.presetTimer) clearTimeout(state.presetTimer);
+        state.presetTimer = setTimeout(() => {
+          state.pendingPreset = null;
+          render();
+        }, 4000);
+        render();
+        showToast('Click again to confirm — cell values will be cleared');
+      }
+    },
+
+    // ---- Section / row ops ----
+    updateSection(sid, patch) {
+      const cur = getActive();
+      const sec = cur.sections.find(s => s.id === sid);
+      Object.assign(sec, patch);
+      saveState();
+      renderPreviewOnly();
+    },
+
+    updateRowCell(sid, rid, colId, value) {
+      const cur = getActive();
+      const sec = cur.sections.find(s => s.id === sid);
+      const row = sec.rows.find(r => r.id === rid);
+      row.values = row.values || {};
+      row.values[colId] = value;
+      saveState();
+      renderPreviewOnly();
+    },
+
+    addSection() {
+      const cur = getActive();
+      cur.sections.push(blankSection(cur.columns));
+      saveState();
+      render();
+    },
+
+    removeSection(sid) {
+      const cur = getActive();
+      cur.sections = cur.sections.filter(s => s.id !== sid);
+      if (cur.sections.length === 0) cur.sections.push(blankSection(cur.columns));
+      saveState();
+      render();
+    },
+
+    addRow(sid) {
+      const cur = getActive();
+      const sec = cur.sections.find(s => s.id === sid);
+      sec.rows.push(blankRow(cur.columns));
+      saveState();
+      render();
+    },
+
+    removeRow(sid, rid) {
+      const cur = getActive();
+      const sec = cur.sections.find(s => s.id === sid);
+      sec.rows = sec.rows.filter(r => r.id !== rid);
+      if (sec.rows.length === 0) sec.rows.push(blankRow(cur.columns));
+      saveState();
+      render();
+    },
+
+    moveSection(sid, dir) {
+      const cur = getActive();
+      const idx = cur.sections.findIndex(s => s.id === sid);
+      const n = idx + dir;
+      if (n < 0 || n >= cur.sections.length) return;
+      [cur.sections[idx], cur.sections[n]] = [cur.sections[n], cur.sections[idx]];
+      saveState();
+      render();
+    },
+
+    moveRow(sid, rid, dir) {
+      const cur = getActive();
+      const sec = cur.sections.find(s => s.id === sid);
+      const idx = sec.rows.findIndex(r => r.id === rid);
+      const n = idx + dir;
+      if (n < 0 || n >= sec.rows.length) return;
+      [sec.rows[idx], sec.rows[n]] = [sec.rows[n], sec.rows[idx]];
+      saveState();
+      render();
+    },
+
+    // ---- Export ----
+    exportHTML() {
+      const cur = getActive();
+      const html = buildExportHTML(cur);
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = cur.title.replace(/[^\w\-]+/g, '_') + '.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('HTML downloaded');
+    },
+
+    exportPDF() {
+      const cur = getActive();
+      const html = buildExportHTML(cur);
+      // Use an iframe-in-overlay rather than window.open(), because
+      // window.open is blocked in the Claude artifact sandbox.
+      const overlay = document.createElement('div');
+      overlay.id = 'print-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+      overlay.innerHTML = `
+        <div style="background:white;border-radius:8px;padding:20px;max-width:900px;width:100%;max-height:90vh;display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eee;padding-bottom:10px;">
+            <div style="font-size:16px;font-weight:500;">Print preview — Save as PDF</div>
+            <button id="close-print-overlay" style="padding:8px 14px;background:white;color:#1a1a1a;border:1px solid #ccc;border-radius:4px;font-size:13px;font-weight:500;cursor:pointer;">Close</button>
+          </div>
+          <div style="font-size:14px;color:#444;line-height:1.5;">
+            The print dialog should open automatically. Choose <strong>"Save as PDF"</strong> as the destination.
+            If it didn't open, click the button below.
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button id="trigger-print" style="padding:8px 14px;background:#C8102E;color:white;border:none;border-radius:4px;font-size:13px;font-weight:500;cursor:pointer;">Open print dialog</button>
+          </div>
+          <iframe id="print-frame" style="flex:1;width:100%;min-height:400px;border:1px solid #ddd;border-radius:4px;"></iframe>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      const frame = overlay.querySelector('#print-frame');
+      frame.srcdoc = html;
+
+      const tryPrint = () => {
+        try {
+          frame.contentWindow.focus();
+          frame.contentWindow.print();
+        } catch (e) {
+          console.error('Print failed:', e);
+        }
+      };
+
+      // Wait for iframe to fully load, then trigger print
+      frame.onload = () => setTimeout(tryPrint, 200);
+
+      overlay.querySelector('#close-print-overlay').onclick = () => {
+        document.body.removeChild(overlay);
+      };
+      overlay.querySelector('#trigger-print').onclick = tryPrint;
+    },
+
+    exportBackup() {
+      const data = {
+        version: 3,
+        exportedAt: new Date().toISOString(),
+        checklists: state.checklists,
+      };
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const stamp = new Date().toISOString().slice(0, 10);
+      a.download = `mama_checklists_backup_${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Backup saved');
+    },
+
+    importBackup(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!data.checklists || !Array.isArray(data.checklists) || !data.checklists.length) {
+            alert('That file doesn\'t look like a checklist backup.');
+            return;
+          }
+          const replace = confirm(
+            `Found ${data.checklists.length} checklist(s) in the backup.\n\n` +
+            'OK = Replace all current checklists\n' +
+            'Cancel = Add to current checklists (merge)'
+          );
+          if (replace) {
+            state.checklists = data.checklists;
+            state.activeId = data.checklists[0].id;
+          } else {
+            // Merge: regenerate IDs (including column IDs) to avoid collisions
+            const imported = data.checklists.map(c => {
+              const colIdMap = {};
+              const newColumns = (c.columns || defaultColumns()).map(col => {
+                const newId = uid();
+                colIdMap[col.id] = newId;
+                return { ...col, id: newId };
+              });
+              return {
+                ...c,
+                id: uid(),
+                columns: newColumns,
+                sections: c.sections.map(s => ({
+                  ...s,
+                  id: uid(),
+                  rows: s.rows.map(r => {
+                    const newValues = {};
+                    for (const oldId in (r.values || {})) {
+                      const newId = colIdMap[oldId];
+                      if (newId) newValues[newId] = r.values[oldId];
+                    }
+                    return { ...r, id: uid(), values: newValues };
+                  }),
+                })),
+              };
+            });
+            state.checklists = [...state.checklists, ...imported];
+          }
+          saveState();
+          render();
+          showToast('Backup restored');
+        } catch (err) {
+          alert('Could not read that file: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    },
+  };
+
+  window.App = App;
+
+  // ---- Boot ----------------------------------------------------------------
+  loadState();
+  render();
+})();
+</script>
+
+</body>
+</html>
